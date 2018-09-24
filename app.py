@@ -44,12 +44,12 @@ Base.metadata.create_all(conn)
 metadata = MetaData(bind=engine)
 metadata.reflect()
 
+# delete existing tables (for debugging)
+conn.execute(table_clients.delete())
+conn.execute(table_affinities.delete())
+
 table_clients = sqlalchemy.Table('clients', metadata, autoload=True)
 table_affinities = sqlalchemy.Table('affinities', metadata, autoload=True)
-
-#conn.execute(table_clients.delete())
-#conn.execute(table_affinities.delete())
-
 
 # intialize app
 app = Flask(__name__)
@@ -59,26 +59,48 @@ def index():
     print('Someone has visited the index page')
     return "Welcome to the index page"
 
-@app.route("/entry/<firstname>/<lastname>/<organization>/<market>/<relationships>/<bandwidth>/<mission>/<design_style>/<quality>/<opportunity>/<selection_process>/<x_factor>/<total>/<comments>")
-def enter_data(firstname, lastname, organization, market, relationships, bandwidth, mission, design_style, quality, opportunity, selection_process, x_factor, total, comments):
+@app.route("/client_entry/<firstname>/<lastname>/<organization>/<market>/<relationships>/<bandwidth>/<mission>/<design_style>/<quality>/<opportunity>/<selection_process>/<x_factor>/<total>/<comments>")
+def enter_client(name):
     # enter data into sqlite database columnwise
-    #
-    conn.execute(table_clients.insert(), new_client)
-    conn.execute(table_affinities.insert(), new_affinity)
-    #
-    print('Someone has visited the data entry page')
+    new_client_dict = {'name': name}
+    # new_client and new_affinity must be in dict
+    conn.execute(table_clients.insert(), new_client_dict)
+    print('Someone has entered data into the clients table')
+    return "Welcome to the data entry page"
+
+@app.route("/affinity_entry/<firstname>/<lastname>/<organization>/<market>/<relationships>/<bandwidth>/<mission>/<design_style>/<quality>/<opportunity>/<selection_process>/<x_factor>/<total>/<comments>")
+def enter_affinity(firstname, lastname, organization, market, relationships, bandwidth, mission, design_style, quality, opportunity, selection_process, x_factor, total, comments):
+    # build dict and insert into proper table
+    new_affinity_dict = {'firstname': firstname,
+                         'lastname': lastname,
+                         'organization': organization,
+                         'market': market,
+                         'relationships': relationships,
+                         'bandwidth': bandwidth,
+                         'mission': mission,
+                         'design_style': design_style,
+                         'quality': quality,
+                         'opportunity': opportunity,
+                         'selection_process': selection_process,
+                         'x_factor': x_factor,
+                         'total': total,
+                         'comments': comments}
+    conn.execute(table_affinities.insert(), new_affinity_dict)
+    print('Someone has entered data into the affinities table')
     return "Welcome to the data entry page"
 
 @app.route("/dashboard")
 def summary():
-    print('Someone has visited the dashboard page')
     # query existing sqlite database
     # these commands print data in console, can we store?
-    conn.execute('SELECT * FROM clients').fetchall()
-    conn.execute('SELECT * FROM affinities').fetchall()
-    #
-    # turn response to dict, then json for website to render
-    return jsonify(some_dict)
+    clients_response = conn.execute('SELECT * FROM clients').fetchall()
+    affinities_response = conn.execute('SELECT * FROM affinities').fetchall()
+    # build dict from response
+    all_response = {'clients_response': clients_response,
+                    'affinities_response': affinities_response}
+    # return json for website to render
+    print('Someone has visited the dashboard page')
+    return jsonify(all_response)
 
 if __name__ == "__main__":
     app.run(debug=True)
